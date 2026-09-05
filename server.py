@@ -262,7 +262,7 @@ def main():
     url = f"http://127.0.0.1:{args.port}"
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     server.daemon_threads = True
-    print(f"系统监控已启动: {url}  (Ctrl+C 停止)")
+    print(f"系统监控已启动: {url}  (Ctrl+C 停止)", flush=True)
     if not args.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:
