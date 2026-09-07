@@ -1,0 +1,1 @@
+﻿OK 2026-09-07 01:25:54  D:\pagefile.sys  initial=32768MB  max=49152MB

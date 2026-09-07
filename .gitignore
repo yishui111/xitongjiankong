@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+watchdog.log
+watchdog.log.old
+watchdog_state.json
+watchdog_status.json
+watchdog_disabled.flag

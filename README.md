@@ -2,6 +2,48 @@
 
 `sysmonitor.py` —— 终端版，实时查看本机系统、内存、显卡及各项占用情况。
 `server.py` + `index.html` —— 网页版监控面板，浏览器打开即看。
+`inventory.py` —— 按项目列出内存/显卡占用清单（`python inventory.py`）。
+`watchdog.ps1` —— 系统守护（垃圾回收），自动清理闲置的测试遗留进程。
+`gpu_counters.ps1` —— 服务端调用的按进程显卡计数脚本，勿删。
+
+## 双击使用（推荐）
+
+| 文件 | 作用 |
+|------|------|
+| **启动监控.bat** | 启动网页监控并打开页面；同时拉起 watchdog 守护循环。若已在运行则只打开页面、不重复启动 |
+| **停止监控.bat** | 停止监控服务和 watchdog，并写 `watchdog_disabled.flag` 防止定时巡查重启 |
+
+注意：**不要直接双击 .py 文件启动**——报错时窗口一闪而过看不到原因，且 .py 的打开方式取决于系统文件关联。
+
+bat 文件必须保持 **GBK 编码 + CRLF 换行**：本机 cmd 按 GBK 解析批处理，保存成 UTF-8 会导致
+中文行被撕碎、命令报错"不是内部或外部命令"，表现为双击后一闪就退（ 启动监控.bat 曾因被改成
+UTF-8 而双击失败，已转回 GBK 修复）。
+
+## 系统守护 / 垃圾回收（watchdog.ps1）
+
+测试完的项目进程经常驻留在内存/显存里不释放，watchdog 充当"系统与显卡管理员"自动回收：
+
+- `启动监控.bat` 会同时拉起网页监控和 watchdog 守护循环（最小化窗口，每 60 秒巡检一次）。
+- `停止监控.bat` 两者一起停，并写 `watchdog_disabled.flag` 防止定时巡查自动重启。
+
+清理规则（只针对 `D:\xm` 下的测试遗留进程，即 python/java/node 等解释器进程；
+监控工具自身、系统进程、微信/WPS/浏览器/ZCode/Docker/ToDesk 等常用软件绝不清理）：
+
+1. 内存 ≥ 88% 或 显存 ≥ 90% 时，结束"空闲"的测试进程（单核 CPU < 2% 且 GPU < 5%），
+   逐个回收到内存 < 82% 为止；**正在干活的进程（占 CPU 或占 GPU）永不动**。
+2. 测试进程持续空闲 ≥ 120 分钟，即使不超标也回收（防驻留）。
+3. 每次结束动作都写入 `watchdog.log`；最新状态写入 `watchdog_status.json`。
+
+手动单次巡检（打印报告 + 执行同样的清理规则，适合脚本/定时任务调用）：
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File watchdog.ps1
+```
+
+另有 ZCode 定时任务每 30 分钟自动巡检一次：读取 watchdog 报告排查异常、
+必要时人工决策清理，并负责在守护循环意外退出时把它拉起来。
+
+阈值调整：脚本的 param 区（`-MemActPercent` `-VramActPercent` `-IdleKillMinutes` 等）。
 
 ## 网页版（推荐）
 

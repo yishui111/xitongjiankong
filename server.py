@@ -10,6 +10,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
 import webbrowser
@@ -92,7 +93,7 @@ def build_detail_rows():
         out = subprocess.run(
             ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
              "-File", os.path.join(BASE_DIR, "gpu_counters.ps1")],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, timeout=20, encoding="utf-8", errors="replace",
         )
         for line in out.stdout.splitlines():
             parts = line.strip().split("|")
@@ -219,6 +220,9 @@ class Handler(BaseHTTPRequestHandler):
             self._route()
         except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
             pass  # 浏览器刷新/关闭导致连接中断，属正常现象，忽略
+        except Exception:
+            import traceback
+            traceback.print_exc(file=sys.stderr)  # 单个请求异常不要无声无息
 
     def _route(self):
         path = urlparse(self.path).path
