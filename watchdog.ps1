@@ -102,6 +102,11 @@ function Get-Candidates {
         $exe = ""; if ($p.ExecutablePath) { $exe = $p.ExecutablePath.ToLower() }
         $cmd = ""; if ($p.CommandLine)    { $cmd = $p.CommandLine.ToLower() }
         $name = ($p.Name + "").ToLower()
+        # 排除：知音主系统(duihuamoxing)的常驻服务（TTS/数字人/网关/WebUI）
+        # 不是测试遗留，永不回收（2026-09-08，与 duihuamoxing 会话协商加入）
+        if ($cmd -match "duihuamoxing") { continue }
+        if ($exe -match "duihuamoxing") { continue }
+
         $byExe = $exe.StartsWith($ProjectRoot) -and -not $exe.StartsWith($SelfMarker)
         $byCmd = ($Interpreters -contains $name) -and $cmd.Contains("\xm\") -and -not $cmd.Contains($SelfMarker)
         if (-not ($byExe -or $byCmd)) { continue }
