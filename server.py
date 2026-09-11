@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """server.py — 系统监控网页版
 
-运行: python server.py [--port 18080] [--no-browser]
-然后浏览器访问 http://127.0.0.1:18080
+运行: python server.py [--port 18123] [--no-browser]
+然后浏览器访问 http://127.0.0.1:18123
 """
 
 import argparse
@@ -252,7 +252,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     ap = argparse.ArgumentParser(description="系统监控网页版")
-    ap.add_argument("--port", type=int, default=18080)
+    ap.add_argument("--port", type=int, default=18123)
     ap.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
     args = ap.parse_args()
 

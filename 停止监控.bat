@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 set FOUND=
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":18080" ^| findstr "LISTENING"') do (
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":18123" ^| findstr "LISTENING"') do (
     set FOUND=1
     echo ½áÊø¼à¿Ø½ø³Ì PID %%a ...
     taskkill /F /PID %%a >nul 2>&1

@@ -4,18 +4,18 @@ set PY=%LOCALAPPDATA%\Programs\Python\Python310\sysmon_py.exe
 if not exist "%PY%" set PY=python
 
 rem 已在运行则直接打开页面
-powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 18080 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 18123 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
 if %errorlevel% equ 0 (
     echo 监控服务已在运行，直接打开页面...
-    start "" http://127.0.0.1:18080/
+    start "" http://127.0.0.1:18123/
     goto :startwatch
 )
 
 echo 正在启动系统监控（最小化窗口，关掉那个窗口即停止服务）...
-start "sysmonitor" /min "%PY%" server.py --port 18080
+start "sysmonitor" /min "%PY%" server.py --port 18123
 ping -n 4 127.0.0.1 >nul
 
-powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 18080 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 18123 -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
 if %errorlevel% neq 0 (
     echo.
     echo 启动失败！常见原因：
@@ -26,7 +26,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-start "" http://127.0.0.1:18080/
+start "" http://127.0.0.1:18123/
 echo 已启动，页面已在浏览器打开。
 
 :startwatch
