@@ -242,9 +242,11 @@ function Invoke-Cycle {
             }
         }
 
-        # 规则1: 内存/显存超标时，继续收空闲进程直到达标
+        # 规则1: 内存/显存超标时，继续收"当前空闲"的进程直到达标
+        # 注意: 必须按活动度过滤(CPU<2% 且 GPU<5%)，绝不能按空闲时长过滤——
+        #      否则内存持续超标时会误杀正在干活的进程(2026-09-13 修复)
         if ($ram.Percent -ge $MemActPercent) {
-            foreach ($t in @($tracked | Where-Object { $_.IdleMin -lt $IdleKillMinutes })) {
+            foreach ($t in @($tracked | Where-Object { $_.CpuPct -lt $IdleCpuPercent -and $_.EngPct -lt $IdleGpuPercent })) {
                 $ram2 = Get-RamStatus
                 if ($ram2.Percent -lt $MemTargetPercent) { break }
                 if (Get-Process -Id $t.Pid -ErrorAction SilentlyContinue) {
@@ -264,7 +266,7 @@ function Invoke-Cycle {
             Write-Log $warnings[-1]
         }
         if ($gpu -and $gpu.Percent -ge $VramActPercent) {
-            foreach ($t in @($tracked | Where-Object { $_.IdleMin -lt $IdleKillMinutes -and $_.VramMB -ge 100 })) {
+            foreach ($t in @($tracked | Where-Object { $_.CpuPct -lt $IdleCpuPercent -and $_.EngPct -lt $IdleGpuPercent -and $_.VramMB -ge 100 })) {
                 $gpu2 = Get-GpuStatus
                 if (-not $gpu2 -or $gpu2.Percent -lt $VramActPercent) { break }
                 if (Get-Process -Id $t.Pid -ErrorAction SilentlyContinue) {

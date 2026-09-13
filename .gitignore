@@ -5,3 +5,16 @@ watchdog.log.old
 watchdog_state.json
 watchdog_status.json
 watchdog_disabled.flag
+
+# 依赖 / 大文件（代码同步不入库）
+node_modules/
+*.exe
+*.zip
+*.7z
+*.mp4
+*.wav
+*.flac
+*.safetensors
+*.pt
+*.onnx
+*.vrm
