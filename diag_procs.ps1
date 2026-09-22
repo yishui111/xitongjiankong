@@ -1,10 +1,12 @@
-﻿# 临时诊断: 列出 D:\xm 下测试进程的启动时间、父进程、命令行
+﻿# 临时诊断: 列出受监控盘符(D:\ E:\ G:\)下测试进程的启动时间、父进程、命令行
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $all = Get-CimInstance Win32_Process
+$roots = @("D:\", "E:\", "G:\")
 $rows = foreach ($p in $all) {
     $exe = "" + $p.ExecutablePath
     $cmd = "" + $p.CommandLine
-    $isXm = ($exe -like "D:\xm\*") -or ($cmd -like "*\xm\*")
+    $isXm = $false
+    foreach ($r in $roots) { if ($exe -like ($r + "*") -or $cmd -like ("*" + $r + "*")) { $isXm = $true; break } }
     if (-not $isXm) { continue }
     if ($exe -like "*xitongjiankong*" -or $cmd -like "*xitongjiankong*") { continue }
     $pp = $all | Where-Object { $_.ProcessId -eq $p.ParentProcessId } | Select-Object -First 1

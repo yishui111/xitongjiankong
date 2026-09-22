@@ -4,7 +4,8 @@
 #   单次检查+清理:  powershell -NoProfile -ExecutionPolicy Bypass -File watchdog.ps1
 #   常驻守护循环:   powershell -NoProfile -ExecutionPolicy Bypass -File watchdog.ps1 -Loop
 #
-# 只针对 D:\xm 下的"测试遗留进程"(python/java/node 等)，监控工具自身与常用软件绝不清理:
+# 只针对受监控盘符(D:\ E:\ G:\，列表见下方 $ProjectRoots，可增删)下的"测试遗留进程"
+# (python/java/node 等解释器进程)，监控工具自身与常用软件绝不清理:
 #   规则1) 内存或显存超过触发阈值(param 区可调，当前 80%/85%)时，逐个结束"空闲"的
 #          测试进程(单核CPU<2% 且 GPU<5%)，直到内存 < 目标阈值，显存占用大的优先
 #   规则2) 测试进程持续空闲 >= 120 分钟，即使不超标也结束(防驻留)
@@ -32,8 +33,9 @@ $StatusFile = Join-Path $BaseDir "watchdog_status.json"
 $FlagFile   = Join-Path $BaseDir "watchdog_disabled.flag"
 $Counters   = Join-Path $BaseDir "gpu_counters.ps1"
 
-$ProjectRoot  = "d:\xm\"
-$SelfMarker   = "\xm\xitongjiankong\"
+# 受监控的项目盘符列表（盯整个盘，解释器进程才会被纳入；加新盘在这里加一项即可）
+$ProjectRoots = @("d:\", "e:\", "g:\")
+$SelfDir      = ($BaseDir.ToLower() + "\")   # 监控工具自身目录，绝不清理
 $Interpreters = @("python.exe", "pythonw.exe", "java.exe", "javaw.exe", "node.exe")
 
 function Write-Log([string]$msg) {
@@ -95,8 +97,8 @@ function Get-GpuPerPid {
 }
 
 function Get-Candidates {
-    # 测试遗留进程: 可执行文件位于 D:\xm 下(排除监控工具自身)，
-    # 或解释器进程(python/java/node)的命令行引用了 D:\xm 下的脚本
+    # 测试遗留进程: 可执行文件位于受监控盘符下(排除监控工具自身)，
+    # 或解释器进程(python/java/node)的命令行引用了受监控盘符下的脚本
     $result = @()
     foreach ($p in Get-CimInstance Win32_Process) {
         $exe = ""; if ($p.ExecutablePath) { $exe = $p.ExecutablePath.ToLower() }
@@ -107,12 +109,16 @@ function Get-Candidates {
         if ($cmd -match "duihuamoxing") { continue }
         if ($exe -match "duihuamoxing") { continue }
 
-        $byExe = $exe.StartsWith($ProjectRoot) -and -not $exe.StartsWith($SelfMarker)
-        $byCmd = ($Interpreters -contains $name) -and $cmd.Contains("\xm\") -and -not $cmd.Contains($SelfMarker)
+        $rootHit = $false
+        foreach ($r in $ProjectRoots) { if ($exe.StartsWith($r)) { $rootHit = $true; break } }
+        $byExe = $rootHit -and -not $exe.StartsWith($SelfDir)
+        $cmdHit = $false
+        foreach ($r in $ProjectRoots) { if ($cmd.Contains($r)) { $cmdHit = $true; break } }
+        $byCmd = ($Interpreters -contains $name) -and $cmdHit -and -not $cmd.Contains($SelfDir)
         if (-not ($byExe -or $byCmd)) { continue }
         $proj = ""
-        if ($cmd -match "\\xm\\([^\\]+)") { $proj = $Matches[1] }
-        elseif ($exe -match "\\xm\\([^\\]+)") { $proj = $Matches[1] }
+        if ($cmd -match "[a-z]:\\([^\\]+)") { $proj = $Matches[1] }
+        elseif ($exe -match "[a-z]:\\([^\\]+)") { $proj = $Matches[1] }
         $result += [pscustomobject]@{
             # Pid 必须统一转 int：CIM 的 ProcessId 是 UInt32，而 gpu_counters 解析出的
             # 键是 Int32，哈希表按类型匹配，不转的话 VRAM/GPU 占用永远查不到
